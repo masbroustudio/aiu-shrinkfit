@@ -1,0 +1,68 @@
+import React from 'react';
+import { useAppContext } from '../context/AppContext';
+import { Database, Shield, CheckCircle2 } from 'lucide-react';
+
+export const Settings: React.FC = () => {
+  const { brightDataApiKey, setBrightDataApiKey } = useAppContext();
+
+  return (
+    <div className="flex-1 overflow-y-auto p-8 bg-slate-950">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Platform Settings</h1>
+          <p className="text-slate-400">Configure your API integrations and system preferences.</p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Vertex AI Status */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg"><Shield className="w-5 h-5 text-emerald-400" /></div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Google Vertex AI Engine</h3>
+                  <p className="text-sm text-slate-400">Enterprise AI Analyst & Reasoning Core.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-medium text-emerald-400">Connected (Env Managed)</span>
+              </div>
+            </div>
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+              <p className="text-xs text-slate-400 leading-relaxed">
+                API credentials for Vertex AI are securely managed via the environment variables (<code>process.env.API_KEY</code>). No manual configuration is required in this enterprise workspace.
+              </p>
+            </div>
+          </div>
+
+          {/* Bright Data API Key */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-brand-500/10 rounded-lg"><Database className="w-5 h-5 text-brand-400" /></div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Bright Data API Key</h3>
+                <p className="text-sm text-slate-400">Required for live e-commerce scraping (Web Unlocker / Scraper API).</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <input 
+                type="password" 
+                value={brightDataApiKey}
+                onChange={(e) => setBrightDataApiKey(e.target.value)}
+                placeholder="Enter Bright Data Token..." 
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all font-mono"
+              />
+            </div>
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Keys are stored locally in your browser's memory for this session. In a production environment, these would be securely managed via Google Cloud Secret Manager and accessed via Cloud Functions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
