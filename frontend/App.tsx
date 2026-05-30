@@ -11,6 +11,8 @@ import { CompetitorIntel } from './pages/CompetitorIntel';
 import { NetworkHealth } from './pages/NetworkHealth';
 import { Alerts } from './pages/Alerts';
 import { Settings } from './pages/Settings';
+import { EarningsCalendar } from './pages/EarningsCalendar';
+import { PriceHistory } from './pages/PriceHistory';
 
 const App: React.FC = () => {
   return (
@@ -27,6 +29,8 @@ const App: React.FC = () => {
             <Route path="competitors" element={<CompetitorIntel />} />
             <Route path="network" element={<NetworkHealth />} />
             <Route path="alerts" element={<Alerts />} />
+            <Route path="earnings" element={<EarningsCalendar />} />
+            <Route path="history" element={<PriceHistory />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
