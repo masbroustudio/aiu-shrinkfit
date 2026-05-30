@@ -1,9 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { Message, ShrinkflationSignal, Product, ExtractedProductData } from '../types';
 
-// MUST use process.env.API_KEY directly as per strict environment rules
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY, vertexai: true });
-
 const SYSTEM_INSTRUCTION = `You are 'Shrinkflation AI', an enterprise-grade financial market intelligence analyst (Year 2026).
 Your task is to analyze potential margin changes in FMCG companies by comparing historical prices with live e-commerce prices from the provided database.
 
@@ -36,9 +33,18 @@ export const analyzeQueryStream = async function* (
   userQuery: string,
   chatHistory: Message[],
   trackedProducts: Product[],
-  useWebSearch: boolean = false
+  useWebSearch: boolean = false,
+  apiKey: string
 ): AsyncGenerator<{ textChunk: string; signal?: ShrinkflationSignal | null; groundingUrls?: { uri: string; title: string }[] }> {
   
+  if (!apiKey) {
+    yield { textChunk: `\n\n[System Error: Gemini API Key is missing. Please configure it in Settings.]` };
+    return;
+  }
+
+  // Initialize with the provided API key
+  const ai = new GoogleGenAI({ apiKey: apiKey, vertexai: false }); // Set vertexai to false when using raw API key
+
   const contextData = trackedProducts.map(p => {
     const liveDataStr = (p.currentWeight && p.currentPrice) 
       ? `Live: ${p.currentWeight}${p.unit} @ $${p.currentPrice}`
@@ -134,7 +140,13 @@ User Query: ${userQuery}
   }
 };
 
-export const generateDashboardInsights = async (products: Product[]): Promise<string> => {
+export const generateDashboardInsights = async (products: Product[], apiKey: string): Promise<string> => {
+    if (!apiKey) {
+      return "Gemini API Key is missing. Please configure it in Settings.";
+    }
+
+    // Initialize with the provided API key
+    const ai = new GoogleGenAI({ apiKey: apiKey, vertexai: false }); // Set vertexai to false when using raw API key
     const prompt = `Provide 3 short bullet points (max 2 sentences per point) about FMCG market insights based on the following data: ${JSON.stringify(products)}. Focus on shrinkflation trends and margin potential.`;
     
     try {
@@ -153,7 +165,14 @@ export const generateDashboardInsights = async (products: Product[]): Promise<st
     }
 }
 
-export const extractProductDataFromUrl = async (url: string): Promise<ExtractedProductData | null> => {
+export const extractProductDataFromUrl = async (url: string, apiKey: string): Promise<ExtractedProductData | null> => {
+  if (!apiKey) {
+    console.error("Gemini API Key is missing.");
+    return null;
+  }
+
+  // Initialize with the provided API key
+  const ai = new GoogleGenAI({ apiKey: apiKey, vertexai: false }); // Set vertexai to false when using raw API key
   const prompt = `Analyze the following e-commerce URL and extract the likely product details. 
   URL: ${url}
   
