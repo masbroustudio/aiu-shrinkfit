@@ -1,18 +1,45 @@
-import React from 'react';
-import { BellRing, Plus, Settings2, Mail, Webhook, Trash2, AlertTriangle, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { BellRing, Plus, Settings2, Mail, Webhook, Trash2, AlertTriangle, Info, X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { AlertRule } from '../types';
 
 export const Alerts: React.FC = () => {
-  const { alertRules, toggleAlertRule, notifications } = useAppContext();
+  const { alertRules, toggleAlertRule, deleteAlertRule, addAlertRule, notifications } = useAppContext();
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newRule, setNewRule] = useState<Partial<AlertRule>>({
+    name: '',
+    condition: 'Weight Drop > 5%',
+    action: 'Email to Analyst Team',
+    active: true
+  });
+
+  const handleCreateRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newRule.name) {
+      addAlertRule({
+        id: Date.now().toString(),
+        name: newRule.name,
+        condition: newRule.condition!,
+        action: newRule.action!,
+        active: true
+      });
+      setIsModalOpen(false);
+      setNewRule({ name: '', condition: 'Weight Drop > 5%', action: 'Email to Analyst Team', active: true });
+    }
+  };
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-slate-950">
+    <div className="flex-1 overflow-y-auto p-8 bg-slate-950 relative">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Alerts & Triggers</h1>
           <p className="text-slate-400">Automate notifications when alternative data detects market anomalies.</p>
         </div>
-        <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium flex items-center gap-2 transition-colors">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+        >
           <Plus className="w-4 h-4" /> Create Rule
         </button>
       </div>
@@ -44,12 +71,20 @@ export const Alerts: React.FC = () => {
                   {rule.action.includes('Email') ? <Mail className="w-4 h-4" /> : <Webhook className="w-4 h-4" />}
                   {rule.action}
                 </div>
-                <button className="text-slate-500 hover:text-rose-400 transition-colors">
+                <button 
+                  onClick={() => deleteAlertRule(rule.id)}
+                  className="text-slate-500 hover:text-rose-400 transition-colors"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
           ))}
+          {alertRules.length === 0 && (
+            <div className="text-slate-500 text-sm p-4 border border-slate-800 rounded-xl text-center">
+              No alert rules configured.
+            </div>
+          )}
         </div>
 
         {/* Recent Notifications Log */}
@@ -86,6 +121,62 @@ export const Alerts: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Rule Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-800">
+              <h2 className="text-xl font-bold text-white">Create New Alert Rule</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateRule} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Rule Name</label>
+                <input 
+                  required 
+                  type="text" 
+                  value={newRule.name} 
+                  onChange={e => setNewRule({...newRule, name: e.target.value})} 
+                  placeholder='e.g., "Major UNVR Shrinkflation Alert"'
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-emerald-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Condition Type</label>
+                <select 
+                  value={newRule.condition} 
+                  onChange={e => setNewRule({...newRule, condition: e.target.value})} 
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="Weight Drop > 5%">Weight Drop > 5%</option>
+                  <option value="Price Increase > 10%">Price Increase > 10%</option>
+                  <option value="Margin Expansion > 5%">Margin Expansion > 5%</option>
+                  <option value="Any Shrinkflation Detected">Any Shrinkflation Detected</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Action When Triggered</label>
+                <select 
+                  value={newRule.action} 
+                  onChange={e => setNewRule({...newRule, action: e.target.value})} 
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="Email to Analyst Team">Email to Analyst Team</option>
+                  <option value="Slack Webhook">Slack Webhook</option>
+                  <option value="In-App Notification Only">In-App Notification Only</option>
+                </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors">Create Rule</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
