@@ -1,9 +1,20 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Database, Shield, CheckCircle2 } from 'lucide-react';
+import { Database, Shield, CheckCircle2, Moon, Sun, AlertOctagon, Trash2 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { brightDataApiKey, setBrightDataApiKey } = useAppContext();
+  const { brightDataApiKey, setBrightDataApiKey, theme, setTheme } = useAppContext();
+
+  const handleFactoryReset = () => {
+    const confirmReset = window.confirm(
+      "WARNING: This will delete all local data, including tracked products, chat history, alert rules, and API keys. The application will reload to its initial state. Are you sure?"
+    );
+    
+    if (confirmReset) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-slate-950">
@@ -14,6 +25,33 @@ export const Settings: React.FC = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Appearance */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  {theme === 'dark' ? <Moon className="w-5 h-5 text-blue-400" /> : <Sun className="w-5 h-5 text-blue-400" />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Appearance</h3>
+                  <p className="text-sm text-slate-400">Toggle between dark and light mode.</p>
+                </div>
+              </div>
+              <label className="flex items-center cursor-pointer">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only" 
+                    checked={theme === 'light'} 
+                    onChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+                  />
+                  <div className={`block w-12 h-7 rounded-full transition-colors ${theme === 'light' ? 'bg-emerald-500' : 'bg-slate-700'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${theme === 'light' ? 'translate-x-5' : ''}`}></div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {/* Vertex AI Status */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
@@ -61,6 +99,30 @@ export const Settings: React.FC = () => {
               </p>
             </div>
           </div>
+
+          {/* Danger Zone */}
+          <div className="bg-rose-950/20 border border-rose-900/50 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-rose-500/10 rounded-lg"><AlertOctagon className="w-5 h-5 text-rose-400" /></div>
+              <div>
+                <h3 className="text-lg font-semibold text-rose-400">Danger Zone</h3>
+                <p className="text-sm text-rose-500/70">Irreversible destructive actions.</p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-rose-900/30">
+              <div>
+                <h4 className="text-sm font-medium text-slate-200">Factory Reset</h4>
+                <p className="text-xs text-slate-500 mt-1">Clear all local storage, products, and chat history.</p>
+              </div>
+              <button 
+                onClick={handleFactoryReset}
+                className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 border border-rose-600/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" /> Reset App
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
