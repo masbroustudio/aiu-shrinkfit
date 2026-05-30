@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Message } from '../types';
-import { Send, Bot, User, Loader2, Database, Globe, Sparkles, Download, Trash2, Search as SearchIcon, ExternalLink } from 'lucide-react';
+import { Send, Bot, User, Loader2, Database, Globe, Sparkles, Download, Trash2, Search as SearchIcon, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   messages: Message[];
@@ -38,7 +38,6 @@ export const ChatInterface: React.FC<Props> = ({ messages, isTyping, onSendMessa
 
   const handleTemplateClick = (template: string) => {
     if (!isTyping) {
-      // Auto-enable web search if template implies searching news
       const needsSearch = template.includes("latest news");
       if (needsSearch) setUseWebSearch(true);
       onSendMessage(template, needsSearch || useWebSearch);
@@ -98,79 +97,89 @@ export const ChatInterface: React.FC<Props> = ({ messages, isTyping, onSendMessa
           </div>
         )}
 
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-          >
-            <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-              msg.role === 'user' ? 'bg-emerald-600' : 
-              msg.role === 'system' ? 'bg-slate-800' : 'bg-slate-900 border border-slate-700'
-            }`}>
-              {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : 
-               msg.role === 'system' ? <Database className="w-4 h-4 text-slate-400" /> :
-               <Bot className="w-4 h-4 text-emerald-400" />}
-            </div>
-            
-            <div className={`max-w-[85%] rounded-2xl px-5 py-3.5 ${
-              msg.role === 'user' 
-                ? 'bg-emerald-600 text-white rounded-tr-sm' 
-                : msg.role === 'system'
-                ? 'bg-slate-900 text-slate-500 text-xs border border-slate-800 rounded-tl-sm font-mono whitespace-pre-wrap'
-                : 'bg-slate-900 text-slate-300 border border-slate-800 rounded-tl-sm leading-relaxed text-sm'
-            }`}>
-              {msg.text.split('\n').map((line, i) => {
-                const parts = line.split(/(\*\*.*?\*\*)/g);
-                return (
-                  <span key={i} className="block min-h-[1em]">
-                    {parts.map((part, j) => {
-                      if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong key={j} className="font-semibold text-emerald-400">{part.slice(2, -2)}</strong>;
-                      }
-                      return part;
-                    })}
-                  </span>
-                );
-              })}
+        {messages.map((msg, index) => {
+          const isLastModelMsg = msg.role === 'model' && index === messages.length - 1;
+          
+          return (
+            <div
+              key={msg.id}
+              className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+            >
+              <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                msg.role === 'user' ? 'bg-emerald-600' : 
+                msg.role === 'system' ? 'bg-slate-800' : 'bg-slate-900 border border-slate-700'
+              }`}>
+                {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : 
+                 msg.role === 'system' ? <Database className="w-4 h-4 text-slate-400" /> :
+                 <Bot className="w-4 h-4 text-emerald-400" />}
+              </div>
               
-              {/* Render Grounding URLs if available */}
-              {msg.groundingUrls && msg.groundingUrls.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-slate-700/50">
-                  <p className="text-xs font-medium text-slate-400 mb-2 flex items-center gap-1">
-                    <SearchIcon className="w-3 h-3" /> Reference Sources (Google Search):
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {msg.groundingUrls.map((url, idx) => (
-                      <a 
-                        key={idx} 
-                        href={url.uri} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-xs text-brand-400 transition-colors max-w-full"
-                        title={url.title}
-                      >
-                        <span className="truncate max-w-[200px]">{url.title}</span>
-                        <ExternalLink className="w-3 h-3 shrink-0" />
-                      </a>
+              <div className={`max-w-[85%] rounded-2xl px-5 py-3.5 ${
+                msg.role === 'user' 
+                  ? 'bg-emerald-600 text-white rounded-tr-sm' 
+                  : msg.role === 'system'
+                  ? 'bg-slate-900 text-slate-500 text-xs border border-slate-800 rounded-tl-sm font-mono whitespace-pre-wrap'
+                  : 'bg-slate-900 text-slate-300 border border-slate-800 rounded-tl-sm leading-relaxed text-sm'
+              }`}>
+                {/* Tool Execution Visualization for System Messages */}
+                {msg.role === 'system' ? (
+                  <div className="space-y-1">
+                    {msg.text.split('\n').map((line, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        {line.includes('Executing') ? <Loader2 className="w-3 h-3 animate-spin text-brand-400" /> : <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                        <span>{line}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <>
+                    {msg.text.split('\n').map((line, i) => {
+                      const parts = line.split(/(\*\*.*?\*\*)/g);
+                      return (
+                        <span key={i} className="block min-h-[1em]">
+                          {parts.map((part, j) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                              return <strong key={j} className="font-semibold text-emerald-400">{part.slice(2, -2)}</strong>;
+                            }
+                            return part;
+                          })}
+                        </span>
+                      );
+                    })}
+                    {/* Blinking cursor for streaming */}
+                    {isTyping && isLastModelMsg && (
+                      <span className="inline-block w-2 h-4 bg-emerald-400 animate-pulse ml-1 align-middle"></span>
+                    )}
+                  </>
+                )}
+                
+                {/* Render Grounding URLs if available */}
+                {msg.groundingUrls && msg.groundingUrls.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-slate-700/50">
+                    <p className="text-xs font-medium text-slate-400 mb-2 flex items-center gap-1">
+                      <SearchIcon className="w-3 h-3" /> Reference Sources (Google Search):
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {msg.groundingUrls.map((url, idx) => (
+                        <a 
+                          key={idx} 
+                          href={url.uri} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-xs text-brand-400 transition-colors max-w-full"
+                          title={url.title}
+                        >
+                          <span className="truncate max-w-[200px]">{url.title}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-
-        {isTyping && (
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
-              <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
-              <span className="text-xs text-slate-500 font-mono uppercase tracking-wider animate-pulse">Processing Intelligence...</span>
-            </div>
-          </div>
-        )}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
