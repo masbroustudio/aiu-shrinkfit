@@ -14,7 +14,10 @@
     "react-router-dom": "latest",
     "@google/genai": "latest",
     "lucide-react": "latest",
-    "recharts": "latest"
+    "recharts": "latest",
+    "jspdf": "latest",
+    "jspdf-autotable": "latest",
+    "react-joyride": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
