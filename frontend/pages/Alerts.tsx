@@ -151,9 +151,9 @@ export const Alerts: React.FC = () => {
                   onChange={e => setNewRule({...newRule, condition: e.target.value})} 
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="Weight Drop > 5%">Weight Drop > 5%</option>
-                  <option value="Price Increase > 10%">Price Increase > 10%</option>
-                  <option value="Margin Expansion > 5%">Margin Expansion > 5%</option>
+                  <option value="Weight Drop > 5%">Weight Drop &gt; 5%</option>
+                  <option value="Price Increase > 10%">Price Increase &gt; 10%</option>
+                  <option value="Margin Expansion > 5%">Margin Expansion &gt; 5%</option>
                   <option value="Any Shrinkflation Detected">Any Shrinkflation Detected</option>
                 </select>
               </div>
