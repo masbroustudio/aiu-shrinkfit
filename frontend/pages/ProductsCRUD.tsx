@@ -6,7 +6,7 @@ import { extractProductDataFromUrl } from '../services/aiService';
 import { Product } from '../types';
 
 export const ProductsCRUD: React.FC = () => {
-  const { products, addProduct, deleteProduct, updateProduct, brightDataApiKey, addScrapingLog, addNotification } = useAppContext();
+  const { products, addProduct, deleteProduct, updateProduct, brightDataApiKey, geminiApiKey, addScrapingLog, addNotification } = useAppContext();
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,7 +129,7 @@ export const ProductsCRUD: React.FC = () => {
     setExtractionError(null);
     
     try {
-      const extractedData = await extractProductDataFromUrl(inputUrl);
+      const extractedData = await extractProductDataFromUrl(inputUrl, geminiApiKey);
       
       if (extractedData) {
         setFormData({
