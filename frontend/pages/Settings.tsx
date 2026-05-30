@@ -1,9 +1,9 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Database, Shield, CheckCircle2, Moon, Sun, AlertOctagon, Trash2 } from 'lucide-react';
+import { Database, Shield, CheckCircle2, Moon, Sun, AlertOctagon, Trash2, Key, XCircle } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { brightDataApiKey, setBrightDataApiKey, theme, setTheme } = useAppContext();
+  const { brightDataApiKey, setBrightDataApiKey, geminiApiKey, setGeminiApiKey, theme, setTheme } = useAppContext();
 
   const handleFactoryReset = () => {
     const confirmReset = window.confirm(
@@ -52,35 +52,49 @@ export const Settings: React.FC = () => {
             </div>
           </div>
 
-          {/* Vertex AI Status */}
+          {/* Gemini API Key */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/10 rounded-lg"><Shield className="w-5 h-5 text-emerald-400" /></div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Google Vertex AI Engine</h3>
+                  <h3 className="text-lg font-semibold text-white">Google Gemini API Key</h3>
                   <p className="text-sm text-slate-400">Enterprise AI Analyst & Reasoning Core.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-400">Connected (Env Managed)</span>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${geminiApiKey ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+                {geminiApiKey ? <><CheckCircle2 className="w-4 h-4" /> Configured</> : <><XCircle className="w-4 h-4" /> Missing Key</>}
               </div>
             </div>
-            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="mt-4">
+              <input 
+                type="password" 
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
+                placeholder="Enter Gemini API Key (AIzaSy...)" 
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+              />
+            </div>
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700 flex items-start gap-3">
+              <Key className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
               <p className="text-xs text-slate-400 leading-relaxed">
-                API credentials for Vertex AI are securely managed via the environment variables (<code>process.env.API_KEY</code>). No manual configuration is required in this enterprise workspace.
+                For the Cloud Run deployment, please provide your Gemini API Key here. It will be stored locally in your browser.
               </p>
             </div>
           </div>
 
           {/* Bright Data API Key */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-brand-500/10 rounded-lg"><Database className="w-5 h-5 text-brand-400" /></div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Bright Data API Key</h3>
-                <p className="text-sm text-slate-400">Required for live e-commerce scraping (Web Unlocker / Scraper API).</p>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-brand-500/10 rounded-lg"><Database className="w-5 h-5 text-brand-400" /></div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Bright Data API Key</h3>
+                  <p className="text-sm text-slate-400">Required for live e-commerce scraping (Web Unlocker / Scraper API).</p>
+                </div>
+              </div>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${brightDataApiKey ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+                {brightDataApiKey ? <><CheckCircle2 className="w-4 h-4" /> Configured</> : <><XCircle className="w-4 h-4" /> Missing Key</>}
               </div>
             </div>
             <div className="mt-4">
