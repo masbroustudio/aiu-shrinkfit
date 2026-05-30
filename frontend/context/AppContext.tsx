@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Product, Message, ShrinkflationSignal, ScrapingLog, AlertRule, AppNotification } from '../types';
 
 interface AppState {
@@ -20,9 +20,16 @@ interface AppState {
   scrapingLogs: ScrapingLog[];
   addScrapingLog: (log: ScrapingLog) => void;
   alertRules: AlertRule[];
+  addAlertRule: (rule: AlertRule) => void;
+  deleteAlertRule: (id: string) => void;
   toggleAlertRule: (id: string) => void;
   notifications: AppNotification[];
   addNotification: (notif: AppNotification) => void;
+  // UI State
+  theme: 'dark' | 'light';
+  setTheme: (theme: 'dark' | 'light') => void;
+  hasCompletedOnboarding: boolean;
+  setHasCompletedOnboarding: (val: boolean) => void;
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
@@ -34,7 +41,7 @@ const INITIAL_PRODUCTS: Product[] = [
     brand: 'PT ABC',
     category: 'Beverages',
     targetTicker: 'MYOR.JK',
-    historicalPrice: 1.50, // Converted to USD
+    historicalPrice: 1.50,
     historicalWeight: 250,
     unit: 'g',
     lastChecked: new Date().toISOString().split('T')[0],
@@ -49,7 +56,7 @@ const INITIAL_PRODUCTS: Product[] = [
     brand: 'Unilever',
     category: 'Personal Care',
     targetTicker: 'UNVR.JK',
-    historicalPrice: 2.50, // Converted to USD
+    historicalPrice: 2.50,
     historicalWeight: 400,
     unit: 'ml',
     lastChecked: new Date().toISOString().split('T')[0],
@@ -64,7 +71,7 @@ const INITIAL_PRODUCTS: Product[] = [
     brand: 'Nestle',
     category: 'Dairy',
     targetTicker: 'NSRGY',
-    historicalPrice: 1.05, // Converted to USD
+    historicalPrice: 1.05,
     historicalWeight: 189,
     unit: 'ml',
     lastChecked: new Date().toISOString().split('T')[0],
@@ -75,7 +82,6 @@ const INITIAL_PRODUCTS: Product[] = [
   }
 ];
 
-// Initial historical logs to populate the chart
 const INITIAL_LOGS: ScrapingLog[] = [
   { id: 'log1', url: 'https://shopee.co.id/kopi-abc', status: 200, timestamp: new Date(Date.now() - 3600000 * 2), proxy: '114.125.xx.xx (ID)' },
   { id: 'log2', url: 'https://shopee.co.id/sabun-xyz', status: 200, timestamp: new Date(Date.now() - 3600000 * 1.5), proxy: '103.82.xx.xx (ID)' },
@@ -99,17 +105,64 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   }
 ];
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [brightDataApiKey, setBrightDataApiKey] = useState('');
-  
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [currentSignal, setCurrentSignal] = useState<ShrinkflationSignal | null>(null);
+// Helper for localStorage
+const loadFromStorage = <T,>(key: string, fallback: T): T => {
+  try {
+    const stored = localStorage.getItem(key);
+    if (!stored) return fallback;
+    
+    // Revive dates if it's an array of objects with timestamps
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => {
+        const newItem = { ...item };
+        if (newItem.timestamp) newItem.timestamp = new Date(newItem.timestamp);
+        return newItem;
+      }) as unknown as T;
+    }
+    return parsed;
+  } catch {
+    return fallback;
+  }
+};
 
-  const [scrapingLogs, setScrapingLogs] = useState<ScrapingLog[]>(INITIAL_LOGS);
-  const [alertRules, setAlertRules] = useState<AlertRule[]>(INITIAL_RULES);
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(() => loadFromStorage('sai_user', null));
+  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('sai_products', INITIAL_PRODUCTS));
+  const [brightDataApiKey, setBrightDataApiKey] = useState(() => loadFromStorage('sai_bdkey', ''));
+  
+  const [chatMessages, setChatMessages] = useState<Message[]>(() => loadFromStorage('sai_chat', []));
+  const [currentSignal, setCurrentSignal] = useState<ShrinkflationSignal | null>(() => loadFromStorage('sai_signal', null));
+
+  const [scrapingLogs, setScrapingLogs] = useState<ScrapingLog[]>(() => loadFromStorage('sai_logs', INITIAL_LOGS));
+  const [alertRules, setAlertRules] = useState<AlertRule[]>(() => loadFromStorage('sai_rules', INITIAL_RULES));
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => loadFromStorage('sai_notifs', INITIAL_NOTIFICATIONS));
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => loadFromStorage('sai_theme', 'dark'));
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(() => loadFromStorage('sai_onboarding', false));
+
+  // Auto-save to localStorage
+  useEffect(() => { localStorage.setItem('sai_user', JSON.stringify(user)); }, [user]);
+  useEffect(() => { localStorage.setItem('sai_products', JSON.stringify(products)); }, [products]);
+  useEffect(() => { localStorage.setItem('sai_bdkey', JSON.stringify(brightDataApiKey)); }, [brightDataApiKey]);
+  useEffect(() => { localStorage.setItem('sai_chat', JSON.stringify(chatMessages)); }, [chatMessages]);
+  useEffect(() => { localStorage.setItem('sai_signal', JSON.stringify(currentSignal)); }, [currentSignal]);
+  useEffect(() => { localStorage.setItem('sai_logs', JSON.stringify(scrapingLogs)); }, [scrapingLogs]);
+  useEffect(() => { localStorage.setItem('sai_rules', JSON.stringify(alertRules)); }, [alertRules]);
+  useEffect(() => { localStorage.setItem('sai_notifs', JSON.stringify(notifications)); }, [notifications]);
+  useEffect(() => { localStorage.setItem('sai_theme', JSON.stringify(theme)); }, [theme]);
+  useEffect(() => { localStorage.setItem('sai_onboarding', JSON.stringify(hasCompletedOnboarding)); }, [hasCompletedOnboarding]);
+
+  // Apply theme to body
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.remove('dark');
+      // For hackathon demo, we just show a toast since full light mode requires extensive class changes
+      console.log("Light mode selected. Note: Full light mode requires extensive Tailwind class updates. Defaulting to dark aesthetic for enterprise feel.");
+    } else {
+      document.body.classList.add('dark');
+    }
+  }, [theme]);
 
   const login = (userData: User) => setUser(userData);
   const logout = () => {
@@ -125,7 +178,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteProduct = (id: string) => setProducts(products.filter(p => p.id !== id));
 
   const addScrapingLog = (log: ScrapingLog) => setScrapingLogs(prev => [log, ...prev]);
+  
+  const addAlertRule = (rule: AlertRule) => setAlertRules(prev => [...prev, rule]);
+  const deleteAlertRule = (id: string) => setAlertRules(prev => prev.filter(r => r.id !== id));
   const toggleAlertRule = (id: string) => setAlertRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  
   const addNotification = (notif: AppNotification) => setNotifications(prev => [notif, ...prev]);
 
   return (
@@ -136,8 +193,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       chatMessages, setChatMessages,
       currentSignal, setCurrentSignal,
       scrapingLogs, addScrapingLog,
-      alertRules, toggleAlertRule,
-      notifications, addNotification
+      alertRules, addAlertRule, deleteAlertRule, toggleAlertRule,
+      notifications, addNotification,
+      theme, setTheme,
+      hasCompletedOnboarding, setHasCompletedOnboarding
     }}>
       {children}
     </AppContext.Provider>
