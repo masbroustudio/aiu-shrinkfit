@@ -82,3 +82,33 @@ export interface ExtractedProductData {
   weight: number;
   unit: string;
 }
+
+export interface EarningsEvent {
+  ticker: string;
+  company: string;
+  earningsDate: string;
+  daysUntil: number;
+  signalStrength: 'strong' | 'moderate' | 'weak' | 'none';
+  marginExpansion?: number;
+}
+
+export interface StockQuote {
+  ticker: string;
+  price: number;
+  changePercent: number;
+  marketCap: number;
+  peRatio: number;
+  currency: string;
+  lastUpdated: string;
+}
+
+export interface PriceSnapshot {
+  id: string;
+  productId: string;
+  price: number;
+  weight: number;
+  unit: string;
+  pricePerUnit: number;
+  scrapedAt: string;
+  source: string;
+}
