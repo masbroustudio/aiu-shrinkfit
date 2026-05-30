@@ -6,7 +6,7 @@ import { analyzeQueryStream } from '../services/aiService';
 import { useAppContext } from '../context/AppContext';
 
 export const AgentChat: React.FC = () => {
-  const { products, chatMessages, setChatMessages, currentSignal, setCurrentSignal } = useAppContext();
+  const { products, chatMessages, setChatMessages, currentSignal, setCurrentSignal, geminiApiKey } = useAppContext();
   const [isTyping, setIsTyping] = useState(false);
 
   const handleClearChat = useCallback(() => {
@@ -61,7 +61,7 @@ export const AgentChat: React.FC = () => {
     setChatMessages(prev => [...prev, initialModelMsg]);
 
     try {
-      const stream = analyzeQueryStream(text, historyForAI, products, useWebSearch);
+      const stream = analyzeQueryStream(text, historyForAI, products, useWebSearch, geminiApiKey);
       
       for await (const chunk of stream) {
         setChatMessages(prev => 
@@ -99,7 +99,7 @@ export const AgentChat: React.FC = () => {
     } finally {
       setIsTyping(false);
     }
-  }, [chatMessages, products, setChatMessages, setCurrentSignal]);
+  }, [chatMessages, products, setChatMessages, setCurrentSignal, geminiApiKey]);
 
   return (
     <div className="flex h-full w-full overflow-hidden">
