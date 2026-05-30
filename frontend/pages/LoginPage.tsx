@@ -2,27 +2,29 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Radar, Mail, Lock, Loader2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { loginWithGoogle } from '../services/authService';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleLogin = (e: React.FormEvent) => {
+  const handleGoogleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate OAuth delay
-    setTimeout(() => {
-      login({
-        id: 'usr_123',
-        name: 'Financial Analyst',
-        email: 'analyst@hedgefund.com',
-        avatar: 'https://picsum.photos/200',
-        role: 'analyst'
-      });
+    try {
+      // Using the authService as per Blueprint Phase 6.1
+      const userData = await loginWithGoogle();
+      login(userData);
       navigate('/app/dashboard');
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,6 +43,12 @@ export const LoginPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
           <p className="text-slate-400 text-sm">Sign in to access market intelligence</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-sm text-center">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleGoogleLogin} className="space-y-4">
           <div>
@@ -90,7 +98,8 @@ export const LoginPage: React.FC = () => {
         <button 
           onClick={handleGoogleLogin}
           type="button"
-          className="mt-6 w-full bg-white hover:bg-gray-50 text-slate-900 rounded-xl py-3 font-semibold flex items-center justify-center gap-3 transition-all"
+          disabled={isLoading}
+          className="mt-6 w-full bg-white hover:bg-gray-50 text-slate-900 rounded-xl py-3 font-semibold flex items-center justify-center gap-3 transition-all disabled:opacity-70"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
