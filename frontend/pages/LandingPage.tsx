@@ -78,7 +78,7 @@ export const LandingPage: React.FC = () => {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          AITema Hackathon 2026 Winner - Track 2
+          Track 2 - Finnance & Market Intelligence of brightdata-ai-agents-web-data-hackathon
         </div>
         
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 leading-[1.1] animate-slide-up opacity-0" style={{ animationDelay: '0.2s' }}>
