@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ComposedChart, Line } from 'recharts';
 import { ShieldAlert, TrendingDown, Crosshair } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -78,7 +78,36 @@ export const CompetitorIntel: React.FC = () => {
       });
   }, [products]);
 
-  // 4. Calculate Top Cards Dynamically
+  // 4. Dynamic Correlation Data (Stock Price vs Margin Expansion)
+  // Since we don't have a real stock API, we generate a trend based on the actual margin expansion data
+  const correlationData = useMemo(() => {
+    const data = [];
+    const basePrice = 2000; // Arbitrary base stock price
+    
+    // Get the average margin expansion across all products
+    const avgMargin = brandStats.reduce((acc, b) => acc + b.marginExpansionScore, 0) / (brandStats.length || 1);
+    
+    // Create a 6-month trend
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      
+      // Simulate margin growing over time to reach the current avgMargin
+      const simulatedMargin = i === 0 ? avgMargin : Math.max(0, avgMargin - (i * 2));
+      
+      // Simulate stock price reacting to margin expansion
+      const simulatedPrice = basePrice + (simulatedMargin * 50) + (Math.random() * 100 - 50);
+      
+      data.push({
+        date: date.toISOString().split('T')[0].substring(0, 7), // YYYY-MM
+        price: Number(simulatedPrice.toFixed(0)),
+        margin: Number(simulatedMargin.toFixed(1))
+      });
+    }
+    return data;
+  }, [brandStats]);
+
+  // Calculate Top Cards Dynamically
   const mostAggressive = [...brandStats].sort((a, b) => b.shrinkflationRiskScore - a.shrinkflationRiskScore)[0];
   const highestRetention = [...brandStats].sort((a, b) => b.volumeRetentionScore - a.volumeRetentionScore)[0];
   const highestMargin = [...brandStats].sort((a, b) => b.marginExpansionScore - a.marginExpansionScore)[0];
@@ -120,7 +149,7 @@ export const CompetitorIntel: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Dynamic Radar Chart */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <h3 className="text-base font-semibold text-white mb-6">Strategic Positioning Matrix</h3>
@@ -156,6 +185,25 @@ export const CompetitorIntel: React.FC = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Correlation Chart */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <h3 className="text-base font-semibold text-white mb-6">Market Correlation: Margin Expansion vs Stock Price Trend</h3>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={correlationData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="left" orientation="left" stroke="#10b981" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }} />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} />
+              <Bar yAxisId="right" dataKey="margin" name="Avg Margin Expansion (%)" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} />
+              <Line yAxisId="left" type="monotone" dataKey="price" name="Simulated Index Price" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
