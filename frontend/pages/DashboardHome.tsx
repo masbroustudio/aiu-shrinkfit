@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, AlertTriangle, Package, Activity, Sparkles, RefreshCw } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Package, Activity, Sparkles, RefreshCw, ArrowRight } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { generateDashboardInsights } from '../services/aiService';
+import { useNavigate } from 'react-router-dom';
+import { ReportGenerator } from '../components/ReportGenerator';
 
 export const DashboardHome: React.FC = () => {
-  const { products } = useAppContext();
+  const { products, user } = useAppContext();
+  const navigate = useNavigate();
   const [aiInsight, setAiInsight] = useState<string>("Analyzing data...");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -37,7 +40,6 @@ export const DashboardHome: React.FC = () => {
       const oldPricePerUnit = p.historicalPrice / p.historicalWeight;
       const newPricePerUnit = (p.currentPrice || p.historicalPrice) / p.currentWeight;
       
-      // Calculate percentage increase in price per unit
       const marginIncrease = ((newPricePerUnit - oldPricePerUnit) / oldPricePerUnit) * 100;
       
       if (!isNaN(marginIncrease) && isFinite(marginIncrease)) {
@@ -74,11 +76,36 @@ export const DashboardHome: React.FC = () => {
       };
     });
 
+  // 4. Signal Board Data
+  const signalBoard = Array.from(new Set(products.map(p => p.targetTicker))).map(ticker => {
+    const tickerProducts = products.filter(p => p.targetTicker === ticker);
+    let maxMargin = 0;
+    tickerProducts.forEach(p => {
+      if (p.status === 'shrinkflation_detected' && p.currentWeight && p.historicalWeight) {
+        const oldPpu = p.historicalPrice / p.historicalWeight;
+        const newPpu = (p.currentPrice || p.historicalPrice) / p.currentWeight;
+        const margin = ((newPpu - oldPpu) / oldPpu) * 100;
+        if (margin > maxMargin) maxMargin = margin;
+      }
+    });
+    
+    let strength = 'NO SIGNAL';
+    let color = 'text-slate-500';
+    if (maxMargin > 10) { strength = 'STRONG'; color = 'text-emerald-400'; }
+    else if (maxMargin > 5) { strength = 'MODERATE'; color = 'text-amber-400'; }
+    else if (maxMargin > 0) { strength = 'WEAK'; color = 'text-orange-400'; }
+
+    return { ticker, maxMargin, strength, color };
+  }).sort((a, b) => b.maxMargin - a.maxMargin).slice(0, 3);
+
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-slate-950">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Market Intelligence Overview</h1>
-        <p className="text-slate-400">Real-time FMCG margin expansion tracking via alternative data.</p>
+    <div className="flex-1 overflow-y-auto p-8 bg-slate-950 tour-dashboard">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white mb-2">Market Intelligence Overview</h1>
+          <p className="text-slate-400">Real-time FMCG margin expansion tracking via alternative data.</p>
+        </div>
+        <ReportGenerator products={products} user={user} aiInsight={aiInsight} />
       </div>
 
       {/* Top Metrics */}
@@ -113,6 +140,33 @@ export const DashboardHome: React.FC = () => {
           </div>
           <h3 className="text-3xl font-bold text-purple-400 mb-1 truncate" title={topCategory}>{topCategory}</h3>
           <p className="text-sm text-slate-400">Top Shrinking Category</p>
+        </div>
+      </div>
+
+      {/* Pre-Earnings Signal Board */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-base font-semibold text-white flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-400" /> Pre-Earnings Intelligence Signals
+          </h3>
+          <button onClick={() => navigate('/app/earnings')} className="text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1">
+            View Calendar <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {signalBoard.map((sig, idx) => (
+            <div key={idx} className="p-4 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex justify-between items-start mb-2">
+                <span className={`text-xs font-bold px-2 py-1 rounded bg-slate-800 ${sig.color}`}>
+                  {sig.strength}
+                </span>
+              </div>
+              <h4 className="text-xl font-bold text-white mb-1">{sig.ticker}</h4>
+              <p className="text-sm text-slate-400">
+                {sig.maxMargin > 0 ? `+${sig.maxMargin.toFixed(1)}% est. margin` : 'Data insufficient'}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
