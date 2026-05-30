@@ -11,6 +11,8 @@ interface AppState {
   deleteProduct: (id: string) => void;
   brightDataApiKey: string;
   setBrightDataApiKey: (key: string) => void;
+  geminiApiKey: string;
+  setGeminiApiKey: (key: string) => void;
   // Global Chat State
   chatMessages: Message[];
   setChatMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -130,6 +132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(() => loadFromStorage('sai_user', null));
   const [products, setProducts] = useState<Product[]>(() => loadFromStorage('sai_products', INITIAL_PRODUCTS));
   const [brightDataApiKey, setBrightDataApiKey] = useState(() => loadFromStorage('sai_bdkey', ''));
+  const [geminiApiKey, setGeminiApiKey] = useState(() => loadFromStorage('sai_geminikey', ''));
   
   const [chatMessages, setChatMessages] = useState<Message[]>(() => loadFromStorage('sai_chat', []));
   const [currentSignal, setCurrentSignal] = useState<ShrinkflationSignal | null>(() => loadFromStorage('sai_signal', null));
@@ -145,6 +148,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('sai_user', JSON.stringify(user)); }, [user]);
   useEffect(() => { localStorage.setItem('sai_products', JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem('sai_bdkey', JSON.stringify(brightDataApiKey)); }, [brightDataApiKey]);
+  useEffect(() => { localStorage.setItem('sai_geminikey', JSON.stringify(geminiApiKey)); }, [geminiApiKey]);
   useEffect(() => { localStorage.setItem('sai_chat', JSON.stringify(chatMessages)); }, [chatMessages]);
   useEffect(() => { localStorage.setItem('sai_signal', JSON.stringify(currentSignal)); }, [currentSignal]);
   useEffect(() => { localStorage.setItem('sai_logs', JSON.stringify(scrapingLogs)); }, [scrapingLogs]);
@@ -157,7 +161,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (theme === 'light') {
       document.body.classList.remove('dark');
-      // For hackathon demo, we just show a toast since full light mode requires extensive class changes
       console.log("Light mode selected. Note: Full light mode requires extensive Tailwind class updates. Defaulting to dark aesthetic for enterprise feel.");
     } else {
       document.body.classList.add('dark');
@@ -190,6 +193,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       user, login, logout,
       products, addProduct, updateProduct, deleteProduct,
       brightDataApiKey, setBrightDataApiKey,
+      geminiApiKey, setGeminiApiKey,
       chatMessages, setChatMessages,
       currentSignal, setCurrentSignal,
       scrapingLogs, addScrapingLog,
