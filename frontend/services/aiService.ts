@@ -32,14 +32,13 @@ IMPORTANT RULES:
 \`\`\`
 Use professional, sharp English, typical of a hedge fund analyst.`;
 
-export const analyzeQuery = async (
+export const analyzeQueryStream = async function* (
   userQuery: string,
   chatHistory: Message[],
   trackedProducts: Product[],
   useWebSearch: boolean = false
-): Promise<{ text: string; signal: ShrinkflationSignal | null; groundingUrls?: { uri: string; title: string }[] }> => {
+): AsyncGenerator<{ textChunk: string; signal?: ShrinkflationSignal | null; groundingUrls?: { uri: string; title: string }[] }> {
   
-  // Using actual data from state, NO mock data.
   const contextData = trackedProducts.map(p => {
     const liveDataStr = (p.currentWeight && p.currentPrice) 
       ? `Live: ${p.currentWeight}${p.unit} @ $${p.currentPrice}`
@@ -73,74 +72,65 @@ User Query: ${userQuery}
       temperature: 0.2,
     };
 
-    // If Web Search feature is enabled, add googleSearch tool
     if (useWebSearch) {
       config.tools = [{ googleSearch: {} }];
     }
 
-    const response = await ai.models.generateContent({
+    const responseStream = await ai.models.generateContentStream({
       model: 'gemini-2.5-flash',
       contents: contents,
       config: config
     });
 
-    const responseText = response.text || "";
-    let cleanText = responseText;
-    let signal: ShrinkflationSignal | null = null;
+    let fullText = "";
     let groundingUrls: { uri: string; title: string }[] = [];
 
-    // Extract URLs from Grounding Metadata if available
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (chunks && Array.isArray(chunks)) {
-      chunks.forEach((chunk: any) => {
-        if (chunk.web?.uri && chunk.web?.title) {
-          // Avoid duplicate URLs
-          if (!groundingUrls.find(u => u.uri === chunk.web.uri)) {
-            groundingUrls.push({ uri: chunk.web.uri, title: chunk.web.title });
+    for await (const chunk of responseStream) {
+      if (chunk.text) {
+        fullText += chunk.text;
+        yield { textChunk: chunk.text };
+      }
+      
+      // Extract grounding URLs if present in the chunk
+      const chunks = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (chunks && Array.isArray(chunks)) {
+        chunks.forEach((c: any) => {
+          if (c.web?.uri && c.web?.title) {
+            if (!groundingUrls.find(u => u.uri === c.web.uri)) {
+              groundingUrls.push({ uri: c.web.uri, title: c.web.title });
+            }
           }
-        }
-      });
+        });
+      }
     }
 
-    // Robust JSON Parsing
-    let jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
+    // After stream finishes, parse JSON for signal
+    let signal: ShrinkflationSignal | null = null;
+    let jsonMatch = fullText.match(/```json\n([\s\S]*?)\n```/);
     
     if (!jsonMatch) {
-      // Fallback: try to find anything that looks like the expected JSON object
-      jsonMatch = responseText.match(/\{[\s\S]*"signalDetected"[\s\S]*\}/);
+      jsonMatch = fullText.match(/\{[\s\S]*"signalDetected"[\s\S]*\}/);
       if (jsonMatch) {
          try {
            signal = JSON.parse(jsonMatch[0]) as ShrinkflationSignal;
-           cleanText = responseText.replace(jsonMatch[0], '').trim();
-         } catch(e) {
-           console.error("Failed fallback JSON parse", e);
-         }
+         } catch(e) {}
       }
     } else {
       try {
         signal = JSON.parse(jsonMatch[1]) as ShrinkflationSignal;
-        cleanText = responseText.replace(/```json\n[\s\S]*?\n```/, '').trim();
-      } catch (e) {
-        console.error("Failed to parse signal JSON", e);
-      }
+      } catch (e) {}
     }
 
-    return { text: cleanText, signal, groundingUrls };
+    // Yield final metadata
+    yield { textChunk: "", signal, groundingUrls };
 
   } catch (error: any) {
     console.error("Error calling Gemini API:", error);
-    
     if (error.message && error.message.includes('429')) {
-      return {
-        text: `System Alert: Vertex AI API quota exhausted (Error 429: Resource Exhausted). Please wait a moment before trying again.`,
-        signal: null
-      };
+      yield { textChunk: `\n\n[System Alert: Vertex AI API quota exhausted (Error 429). Please wait.]` };
+    } else {
+      yield { textChunk: `\n\n[System Error: Connection to Vertex AI failed. Details: ${error.message}]` };
     }
-
-    return {
-      text: `System Error: Connection to Vertex AI failed. Details: ${error.message || 'Ensure API_KEY environment variable is valid.'}`,
-      signal: null
-    };
   }
 };
 
