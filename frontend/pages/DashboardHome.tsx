@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, AlertTriangle, Package, Activity, Sparkles, RefreshCw, ArrowRight } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Package, Activity, Sparkles, RefreshCw, ArrowRight, Download } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { generateDashboardInsights } from '../services/aiService';
 import { useNavigate } from 'react-router-dom';
 import { ReportGenerator } from '../components/ReportGenerator';
 
 export const DashboardHome: React.FC = () => {
-  const { products, user } = useAppContext();
+  const { products, user, geminiApiKey } = useAppContext();
   const navigate = useNavigate();
   const [aiInsight, setAiInsight] = useState<string>("Analyzing data...");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -15,14 +15,14 @@ export const DashboardHome: React.FC = () => {
   const fetchInsights = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const insight = await generateDashboardInsights(products);
+      const insight = await generateDashboardInsights(products, geminiApiKey);
       setAiInsight(insight);
     } catch (error) {
       setAiInsight("Failed to load insights. Request limitation (429) or network error occurred.");
     } finally {
       setIsRefreshing(false);
     }
-  }, [products]);
+  }, [products, geminiApiKey]);
 
   useEffect(() => {
     fetchInsights();
