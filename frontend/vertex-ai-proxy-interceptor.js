@@ -9,6 +9,23 @@
 (function() {
   const originalFetch = window.fetch;
   const originalWebSocket = window.WebSocket;
+  const appConfig = window.__APP_CONFIG__ || {};
+  const apiBaseUrl = typeof appConfig.apiBaseUrl === 'string' ? appConfig.apiBaseUrl.replace(/\/$/, '') : '';
+
+  function proxyHttpUrl(path) {
+    return apiBaseUrl ? `${apiBaseUrl}${path}` : path;
+  }
+
+  function proxyWebSocketUrl(path) {
+    if (apiBaseUrl) {
+      const url = new URL(apiBaseUrl);
+      url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${url.origin}${path}`;
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}${path}`;
+  }
 
   // Function to validate VertexGenAi endpoints
   function isValidUrl(url) {
@@ -74,9 +91,7 @@
       
       console.log('[Vertex AI Proxy Shim] Intercepted Vertex WebSocket request:', inputUrl);
       const targetUrl = encodeURIComponent(inputUrl);
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const proxyUrl = `${protocol}//${host}/ws-proxy?target=${targetUrl}`;
+      const proxyUrl = `${proxyWebSocketUrl('/ws-proxy')}?target=${targetUrl}`;
       return new originalWebSocket(proxyUrl, protocols);
     }
     return new originalWebSocket(url, protocols);
@@ -118,8 +133,9 @@
           body: JSON.stringify(requestDetails),
         };
 
-        console.log('[Vertex AI Proxy Shim] Fetching from local Node.js backend: /api-proxy');
-        const proxyResponse = await fetch('/api-proxy', proxyFetchOptions);
+        const proxyEndpoint = proxyHttpUrl('/api-proxy');
+        console.log(`[Vertex AI Proxy Shim] Fetching from Node.js backend: ${proxyEndpoint}`);
+        const proxyResponse = await fetch(proxyEndpoint, proxyFetchOptions);
 
         if (proxyResponse.status === 401) {
             console.error('[Vertex Proxy Shim] Local Node.js backend returned 401. Authentication may be needed.');

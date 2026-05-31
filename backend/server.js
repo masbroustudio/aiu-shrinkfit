@@ -4,18 +4,39 @@
  * Copyright 2025 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express from 'express';
+import cors from 'cors';
 import { GoogleAuth } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
 
+dotenv.config({ path: process.env.DOTENV_CONFIG_PATH || '.env.local' });
+dotenv.config();
+
 const app = express();
+
+const FRONTEND_ORIGINS = (process?.env?.FRONTEND_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || FRONTEND_ORIGINS.length === 0 || FRONTEND_ORIGINS.includes(origin.replace(/\/$/, ''))) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-App-Proxy'],
+}));
 app.use(express.json({limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb"}));
 
-const PORT = process?.env?.API_BACKEND_PORT || 5000;
-const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "127.0.0.1";
+const PORT = process?.env?.PORT || process?.env?.API_BACKEND_PORT || 5000;
+const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "0.0.0.0";
 
 const GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION;
 const GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT;
@@ -311,7 +332,7 @@ app.post('/api-proxy', async (req, res) => {
 });
 
 const server = app.listen(PORT, API_BACKEND_HOST, () => {
-  console.log(`Vertex AI Backend listening at http://localhost:${PORT}`);
+  console.log(`Vertex AI Backend listening at http://${API_BACKEND_HOST}:${PORT}`);
 });
 
 
